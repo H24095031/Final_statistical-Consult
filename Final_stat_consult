@@ -1,0 +1,1729 @@
+---
+title: "Final_stat_consult"
+author: "H24095031"
+date: "2025-01-06"
+output:
+  pdf_document:
+    latex_engine: xelatex
+
+---
+
+```{r, warning=FALSE, out.width="10%"}
+
+rm(list = ls())
+# ===== 1. 載入必要的套件 =====
+library(Hmisc)
+library(DataExplorer)
+library(sp)
+library(sf)
+library(spacetime)
+library(gstat)
+library(dplyr)
+library(lubridate)
+library(spdep)
+library(ggplot2)
+library(RColorBrewer)
+
+# ===== 2. 數據讀取與合併 =====
+# 創建年份向量
+folder_path <- "C:/Users/jonat/Downloads"
+years <- sprintf("%d", 105:113)
+# Use lapply to read files and append the 'year' column
+data_list <- lapply(years, function(year) {
+  file_name <- paste0(folder_path, "/", year, ".csv") # Include folder path
+  if (file.exists(file_name)) {  # Check if the file exists
+    df <- read.csv(file_name)
+    df$year <- year
+    return(df)
+  } else {
+    warning(paste("File does not exist:", file_name)) # Warning for missing files
+    return(NULL)
+  }
+})
+
+# Remove NULL elements (if any files were missing)
+data_list <- Filter(Negate(is.null), data_list)
+
+# 合併所有數據框
+data_combined <- do.call(rbind, data_list)
+
+
+
+
+
+
+# 日期轉換
+data_combined <- data_combined %>%
+  mutate(日期 = as.Date(日期, format = "%Y%m%d")) %>%
+  filter(!is.na(日期)) %>%
+  arrange(日期)
+
+
+
+# 經緯度處理
+data_combined <- data_combined %>%
+  # 移除非數字字符
+  mutate(
+    經度 = gsub("[^0-9.]", "", 經度),
+    緯度 = gsub("[^0-9.]", "", 緯度)
+  ) %>%
+  # 轉換為數字並處理經緯度順序
+  mutate(
+    經度 = ifelse(as.numeric(經度) < 90, 
+                as.numeric(緯度), 
+                as.numeric(經度)),
+    緯度 = ifelse(as.numeric(緯度) > 90,
+                as.numeric(經度),
+                as.numeric(緯度))
+  ) %>%
+  # 移除NA值
+  filter(!is.na(經度) & !is.na(緯度)) %>%
+  # 確保經緯度在合理範圍內
+  filter(經度 >= 120 & 經度 <= 122) %>%
+  filter(緯度 >= 21.5 & 緯度 <= 25.5)
+
+data_combined <- data_combined %>%
+  mutate(
+    經度 = as.numeric(經度),
+    緯度 = as.numeric(緯度),
+    year = as.numeric(year)
+  )
+
+# 時間分析
+data_combined <- data_combined %>%
+  mutate(
+    year = year(日期),
+    month = month(日期),
+    day = day(日期)
+  )
+data_combined <- data_combined %>%
+  filter(陽性戶數 != 0 & !is.na(陽性戶數))
+
+
+
+data <- data_combined
+# 創建sf對象
+data_sf <- st_as_sf(data, coords = c("經度", "緯度"), crs = 4326)
+
+# 檢查空間對象s
+# 繪製第1到5個屬性
+# ... existing code ...
+
+# 获取所有年份
+unique_years <- unique(data_sf$year)
+unique_months <- unique(data_sf$month)
+
+# 遍历每个年份
+yearly_data_105 <- data_sf %>% filter(year == unique_years[1])
+yearly_data_106 <- data_sf %>% filter(year == unique_years[2])
+yearly_data_107 <- data_sf %>% filter(year == unique_years[3])
+yearly_data_108 <- data_sf %>% filter(year == unique_years[4])
+yearly_data_109 <- data_sf %>% filter(year == unique_years[5])
+yearly_data_110 <- data_sf %>% filter(year == unique_years[6])
+yearly_data_111 <- data_sf %>% filter(year == unique_years[7])
+yearly_data_112 <- data_sf %>% filter(year == unique_years[8])
+yearly_data_113 <- data_sf %>% filter(year == unique_years[9])
+
+# 遍历每个月份
+months_data_105_1<- yearly_data_105 %>% filter(month == unique_months[1])
+months_data_105_2<- yearly_data_105 %>% filter(month == unique_months[2])
+months_data_105_3<- yearly_data_105 %>% filter(month == unique_months[3])
+months_data_105_4<- yearly_data_105 %>% filter(month == unique_months[4])
+months_data_105_5<- yearly_data_105 %>% filter(month == unique_months[5])
+months_data_105_6<- yearly_data_105 %>% filter(month == unique_months[6])
+months_data_105_7<- yearly_data_105 %>% filter(month == unique_months[7])
+months_data_105_8<- yearly_data_105 %>% filter(month == unique_months[8])
+months_data_105_9<- yearly_data_105 %>% filter(month == unique_months[9])
+months_data_105_10<- yearly_data_105 %>% filter(month == unique_months[10])
+months_data_105_11<- yearly_data_105 %>% filter(month == unique_months[11])
+months_data_105_12<- yearly_data_105 %>% filter(month == unique_months[12])
+
+
+#2016(105)
+# Split the data by the 'month' column into a list
+month_data_105_list_105 <- split(yearly_data_105, yearly_data_105$month)
+
+# Prepare a list to store cleaned data for each month
+cleaned_monthly_data_105 <- list()
+
+for (i in 1:12) {
+  # Access the data for the current month
+  month_data_105 <- month_data_105_list_105[[as.character(i)]]
+  
+  # Skip if the data is NULL or empty
+  if (!is.null(month_data_105) && nrow(month_data_105) > 0) {
+    # Extract coordinates
+    coords <- st_coordinates(month_data_105)
+    month_data_105$經度 <- coords[, 1]
+    month_data_105$緯度 <- coords[, 2]
+    
+    # Convert and clean 容器指數
+    month_data_105$容器指數 <- as.numeric(month_data_105$容器指數)
+    month_data_105 <- month_data_105 %>% filter(!is.na(容器指數))
+    
+    # Convert and clean 容器級數
+    month_data_105$容器指數 <- as.numeric(month_data_105$容器級數)
+    month_data_105 <- month_data_105 %>% filter(!is.na(容器級數))
+    
+    # Store cleaned data in the list
+    cleaned_monthly_data_105[[paste0("Month_", i)]] <- month_data_105
+  } else {
+    cat("No data for Month", i, "\n")
+    cleaned_monthly_data_105[[paste0("Month_", i)]] <- NULL
+  }
+}
+
+monthly_plots_105 <- list()
+
+for (i in 1:12) {
+  # Access cleaned data for the current month
+  month_data_105 <- cleaned_monthly_data_105[[paste0("Month_", i)]]
+  
+  if (!is.null(month_data_105) && nrow(month_data_105) > 0) {
+    # Create the plot
+    plot <- ggplot(month_data_105, aes(x = 經度, y = 緯度)) +
+      geom_point(aes(color = 容器指數), size = 2, alpha = 0.7) +
+      labs(
+        title = paste("Data for Month", i),
+        x = "Longitude (經度)",
+        y = "Latitude (緯度)",
+        color = "容器指數"
+      ) +
+      theme_minimal()
+    
+    # Store the plot
+    monthly_plots_105[[paste0("Month_", i)]] <- plot
+  } else {
+    cat("No plot for Month", i, "\n")
+    monthly_plots_105[[paste0("Month_", i)]] <- NULL
+  }
+}
+for (i in 1:12) {
+  if (!is.null(monthly_plots_105[[paste0("Month_", i)]])) {
+    print(monthly_plots_105[[paste0("Month_", i)]])
+  }
+}
+
+
+
+
+
+# 讀取行政區 shapefile
+tainan_boundary <- st_read("C:/Users/jonat/OneDrive/Desktop/tainan_town/tainan_town")
+
+# 檢查和設置 CRS
+crs_boundary <- st_crs(tainan_boundary)
+crs_yearly_105 <- st_crs(yearly_data_105)
+
+# 如果 CRS 不一致，進行轉換
+if (crs_yearly_105 != crs_boundary) {
+  yearly_data_105 <- st_transform(yearly_data_105, crs_boundary)
+}
+
+# 計算密度指數
+density_by_town_105 <- yearly_data_105 %>%
+  st_join(tainan_boundary, join = st_within) %>%
+  group_by(TOWN_ID) %>%  # 確保這裡的欄位名正確
+  summarise(density_index = sum(陽性容器合計) / sum(調查容器合計) * 100)
+
+# 檢查 CRS
+crs_boundary <- st_crs(tainan_boundary)
+crs_density_105 <- st_crs(density_by_town_105)
+
+# 如果 CRS 不一致，進行轉換
+if (crs_boundary != crs_density_105) {
+  density_by_town_105 <- st_transform(density_by_town_105, crs_boundary)
+}
+
+
+
+st_crs(density_by_town_105) # 檢查 CRS
+st_crs(tainan_boundary) # 檢查 CRS
+
+# 如果 CRS 不一致，轉換 CRS
+density_by_town_105 <- st_transform(density_by_town_105, st_crs(tainan_boundary))
+
+
+
+
+
+# Prepare a list to store monthly data
+monthly_density_data <- list()
+monthly_plots_105 <- list()
+
+
+
+
+for (i in 1:12) {
+  # Filter data for the current month
+  month_data_105 <- yearly_data_105 %>% filter(month == i)
+  
+  if (nrow(month_data_105) > 0) {
+    # Step 1: Calculate density index
+    density_by_town_105 <- month_data_105 %>%
+      st_join(tainan_boundary, join = st_within) %>%
+      group_by(TOWN_ID) %>%
+      summarise(density_index = sum(陽性容器合計, na.rm = TRUE) / sum(調查容器合計, na.rm = TRUE) * 100)
+    
+    # Step 2: Spatial join with boundary file
+    merged_data_105 <- tainan_boundary %>%
+      left_join(density_by_town_105 %>% st_drop_geometry(), by = "TOWN_ID") %>%
+      st_as_sf()
+    
+    # Step 3: Assign categories, including handling of zero values
+    q1 <- quantile(merged_data_105$density_index, probs = 0.25, na.rm = TRUE)
+    q3 <- quantile(merged_data_105$density_index, probs = 0.75, na.rm = TRUE)
+    
+    merged_data_105$density_category <- ifelse(
+      is.na(merged_data_105$density_index) | merged_data_105$density_index == 0, "無數據",  # Grey for 0 or missing values
+      ifelse(
+        merged_data_105$density_index >= q3, "高密度區",
+        ifelse(merged_data_105$density_index <= q1, "低密度區", "一般")
+      )
+    )
+    
+    # Step 4: Create the plot
+    plot <- ggplot() +
+      geom_sf(data = merged_data_105, aes(fill = density_category), color = "black", lwd = 0.3) +
+      scale_fill_manual(
+        values = c("高密度區" = "red", "一般" = "green", "低密度區" = "yellow", "無數據" = "grey"),
+        na.translate = TRUE
+      ) +
+      labs(
+        title = paste("台南市密度分佈圖 - 2016 Month", i),
+        fill = "密度分類"
+      ) +
+      theme_minimal() +
+      theme(
+        plot.title = element_text(color = "white", hjust = 0.5),
+        axis.text = element_text(color = "white"),
+        axis.title = element_text(color = "white"),
+        legend.text = element_text(color = "white"),
+        legend.title = element_text(color = "white"),
+        panel.background = element_rect(fill = "black"),  # Ensure the background is black
+        plot.background = element_rect(fill = "black") 
+      )
+    
+    # Display the plot
+    print(plot)
+    # Save the plot
+    ggsave(filename = paste0("density_map_2016_month_", i, ".png"), plot = plot, dpi = 300)
+  } else {
+    # Handle months with no data
+    cat("No data for Month", i, "\n")
+  }
+}
+
+#2017(106)
+# Split the data by the 'month' column into a list
+month_data_106_list_106 <- split(yearly_data_106, yearly_data_106$month)
+
+# Prepare a list to store cleaned data for each month
+cleaned_monthly_data_106 <- list()
+
+for (i in 1:12) {
+  # Access the data for the current month
+  month_data_106 <- month_data_106_list_106[[as.character(i)]]
+  
+  # Skip if the data is NULL or empty
+  if (!is.null(month_data_106) && nrow(month_data_106) > 0) {
+    # Extract coordinates
+    coords <- st_coordinates(month_data_106)
+    month_data_106$經度 <- coords[, 1]
+    month_data_106$緯度 <- coords[, 2]
+    
+    # Convert and clean 容器指數
+    month_data_106$容器指數 <- as.numeric(month_data_106$容器指數)
+    month_data_106 <- month_data_106 %>% filter(!is.na(容器指數))
+    
+    # Convert and clean 容器級數
+    month_data_106$容器指數 <- as.numeric(month_data_106$容器級數)
+    month_data_106 <- month_data_106 %>% filter(!is.na(容器級數))
+    
+    # Store cleaned data in the list
+    cleaned_monthly_data_106[[paste0("Month_", i)]] <- month_data_106
+  } else {
+    cat("No data for Month", i, "\n")
+    cleaned_monthly_data_106[[paste0("Month_", i)]] <- NULL
+  }
+}
+
+monthly_plots_106 <- list()
+
+for (i in 1:12) {
+  # Access cleaned data for the current month
+  month_data_106 <- cleaned_monthly_data_106[[paste0("Month_", i)]]
+  
+  if (!is.null(month_data_106) && nrow(month_data_106) > 0) {
+    # Create the plot
+    plot <- ggplot(month_data_106, aes(x = 經度, y = 緯度)) +
+      geom_point(aes(color = 容器指數), size = 2, alpha = 0.7) +
+      labs(
+        title = paste("Data for Month", i),
+        x = "Longitude (經度)",
+        y = "Latitude (緯度)",
+        color = "容器指數"
+      ) +
+      theme_minimal()
+    
+    # Store the plot
+    monthly_plots_106[[paste0("Month_", i)]] <- plot
+  } else {
+    cat("No plot for Month", i, "\n")
+    monthly_plots_106[[paste0("Month_", i)]] <- NULL
+  }
+}
+for (i in 1:12) {
+  if (!is.null(monthly_plots_106[[paste0("Month_", i)]])) {
+    print(monthly_plots_106[[paste0("Month_", i)]])
+  }
+}
+
+
+
+##Testing coba seuma region ada, no value= grey (WORKING)
+library(sf)
+library(dplyr)
+library(ggplot2)
+
+
+
+
+# 讀取行政區 shapefile
+tainan_boundary <- st_read("C:/Users/jonat/OneDrive/Desktop/tainan_town/tainan_town")
+
+# 檢查和設置 CRS
+crs_boundary <- st_crs(tainan_boundary)
+crs_yearly_106 <- st_crs(yearly_data_106)
+
+# 如果 CRS 不一致，進行轉換
+if (crs_yearly_106 != crs_boundary) {
+  yearly_data_106 <- st_transform(yearly_data_106, crs_boundary)
+}
+
+# 計算密度指數
+density_by_town <- yearly_data_106 %>%
+  st_join(tainan_boundary, join = st_within) %>%
+  group_by(TOWN_ID) %>%  # 確保這裡的欄位名正確
+  summarise(density_index = sum(陽性容器合計) / sum(調查容器合計) * 100)
+
+# 檢查 CRS
+crs_boundary <- st_crs(tainan_boundary)
+crs_density_106 <- st_crs(density_by_town)
+
+# 如果 CRS 不一致，進行轉換
+if (crs_boundary != crs_density_106) {
+  density_by_town <- st_transform(density_by_town, crs_boundary)
+}
+
+
+
+st_crs(density_by_town) # 檢查 CRS
+st_crs(tainan_boundary) # 檢查 CRS
+
+# 如果 CRS 不一致，轉換 CRS
+density_by_town <- st_transform(density_by_town, st_crs(tainan_boundary))
+
+
+
+
+
+# Prepare a list to store monthly data
+monthly_density_data <- list()
+monthly_plots_106 <- list()
+
+
+
+
+for (i in 1:12) {
+  # Filter data for the current month
+  month_data_106 <- yearly_data_106 %>% filter(month == i)
+  
+  if (nrow(month_data_106) > 0) {
+    # Step 1: Calculate density index
+    density_by_town <- month_data_106 %>%
+      st_join(tainan_boundary, join = st_within) %>%
+      group_by(TOWN_ID) %>%
+      summarise(density_index = sum(陽性容器合計, na.rm = TRUE) / sum(調查容器合計, na.rm = TRUE) * 100)
+    
+    # Step 2: Spatial join with boundary file
+    merged_data_106 <- tainan_boundary %>%
+      left_join(density_by_town %>% st_drop_geometry(), by = "TOWN_ID") %>%
+      st_as_sf()
+    
+    # Step 3: Assign categories, including handling of zero values
+    q1 <- quantile(merged_data_106$density_index, probs = 0.25, na.rm = TRUE)
+    q3 <- quantile(merged_data_106$density_index, probs = 0.75, na.rm = TRUE)
+    
+    merged_data_106$density_category <- ifelse(
+      is.na(merged_data_106$density_index) | merged_data_106$density_index == 0, "無數據",  # Grey for 0 or missing values
+      ifelse(
+        merged_data_106$density_index >= q3, "高密度區",
+        ifelse(merged_data_106$density_index <= q1, "低密度區", "一般")
+      )
+    )
+    
+    # Step 4: Create the plot
+    plot <- ggplot() +
+      geom_sf(data = merged_data_106, aes(fill = density_category), color = "black", lwd = 0.3) +
+      scale_fill_manual(
+        values = c("高密度區" = "red", "一般" = "green", "低密度區" = "yellow", "無數據" = "grey"),
+        na.translate = TRUE
+      ) +
+      labs(
+        title = paste("台南市密度分佈圖 - 2017 Month", i),
+        fill = "密度分類"
+      ) +
+      theme_minimal() +
+      theme(
+        plot.title = element_text(color = "white", hjust = 0.5),
+        axis.text = element_text(color = "white"),
+        axis.title = element_text(color = "white"),
+        legend.text = element_text(color = "white"),
+        legend.title = element_text(color = "white"),
+        panel.background = element_rect(fill = "black"),  # Ensure the background is black
+        plot.background = element_rect(fill = "black") 
+      )
+    
+    # Display the plot
+    print(plot)
+    # Save the plot
+    ggsave(filename = paste0("density_map_2017_month_", i, ".png"), plot = plot, dpi = 300)
+  } else {
+    # Handle months with no data
+    cat("No data for Month", i, "\n")
+  }
+}
+
+#2018(107)
+# Split the data by the 'month' column into a list
+month_data_list_107 <- split(yearly_data_107, yearly_data_107$month)
+
+# Prepare a list to store cleaned data for each month
+cleaned_monthly_data_107 <- list()
+
+for (i in 1:12) {
+  # Access the data for the current month
+  month_data_107 <- month_data_list_107[[as.character(i)]]
+  
+  # Skip if the data is NULL or empty
+  if (!is.null(month_data_107) && nrow(month_data_107) > 0) {
+    # Extract coordinates
+    coords <- st_coordinates(month_data_107)
+    month_data_107$經度 <- coords[, 1]
+    month_data_107$緯度 <- coords[, 2]
+    
+    # Convert and clean 容器指數
+    month_data_107$容器指數 <- as.numeric(month_data_107$容器指數)
+    month_data_107 <- month_data_107 %>% filter(!is.na(容器指數))
+    
+    # Convert and clean 容器級數
+    month_data_107$容器指數 <- as.numeric(month_data_107$容器級數)
+    month_data_107 <- month_data_107 %>% filter(!is.na(容器級數))
+    
+    # Store cleaned data in the list
+    cleaned_monthly_data_107[[paste0("Month_", i)]] <- month_data_107
+  } else {
+    cat("No data for Month", i, "\n")
+    cleaned_monthly_data_107[[paste0("Month_", i)]] <- NULL
+  }
+}
+
+monthly_plots_107 <- list()
+
+for (i in 1:12) {
+  # Access cleaned data for the current month
+  month_data_107 <- cleaned_monthly_data_107[[paste0("Month_", i)]]
+  
+  if (!is.null(month_data_107) && nrow(month_data_107) > 0) {
+    # Create the plot
+    plot <- ggplot(month_data_107, aes(x = 經度, y = 緯度)) +
+      geom_point(aes(color = 容器指數), size = 2, alpha = 0.7) +
+      labs(
+        title = paste("Data for Month", i),
+        x = "Longitude (經度)",
+        y = "Latitude (緯度)",
+        color = "容器指數"
+      ) +
+      theme_minimal()
+    
+    # Store the plot
+    monthly_plots_107[[paste0("Month_", i)]] <- plot
+  } else {
+    cat("No plot for Month", i, "\n")
+    monthly_plots_107[[paste0("Month_", i)]] <- NULL
+  }
+}
+for (i in 1:12) {
+  if (!is.null(monthly_plots_107[[paste0("Month_", i)]])) {
+    print(monthly_plots_107[[paste0("Month_", i)]])
+  }
+}
+
+
+
+##Testing coba seuma region ada, no value= grey (WORKING)
+library(sf)
+library(dplyr)
+library(ggplot2)
+
+
+
+
+# 讀取行政區 shapefile
+tainan_boundary <- st_read("C:/Users/jonat/OneDrive/Desktop/tainan_town/tainan_town")
+
+# 檢查和設置 CRS
+crs_boundary <- st_crs(tainan_boundary)
+crs_yearly_107 <- st_crs(yearly_data_107)
+
+# 如果 CRS 不一致，進行轉換
+if (crs_yearly_107 != crs_boundary) {
+  yearly_data_107 <- st_transform(yearly_data_107, crs_boundary)
+}
+
+# 計算密度指數
+density_by_town_107 <- yearly_data_107 %>%
+  st_join(tainan_boundary, join = st_within) %>%
+  group_by(TOWN_ID) %>%  # 確保這裡的欄位名正確
+  summarise(density_index = sum(陽性容器合計) / sum(調查容器合計) * 100)
+
+# 檢查 CRS
+crs_density_107 <- st_crs(density_by_town_107)
+
+# 如果 CRS 不一致，進行轉換
+if (crs_boundary != crs_density_107) {
+  density_by_town_107 <- st_transform(density_by_town_107, crs_boundary)
+}
+
+
+
+st_crs(density_by_town_107) # 檢查 CRS
+st_crs(tainan_boundary) # 檢查 CRS
+
+# 如果 CRS 不一致，轉換 CRS
+density_by_town_107 <- st_transform(density_by_town_107, st_crs(tainan_boundary))
+
+
+
+
+
+# Prepare a list to store monthly data
+monthly_density_data <- list()
+monthly_plots_107 <- list()
+
+
+
+
+for (i in 1:12) {
+  # Filter data for the current month
+  month_data_107 <- yearly_data_107 %>% filter(month == i)
+  
+  if (nrow(month_data_107) > 0) {
+    # Step 1: Calculate density index
+    density_by_town_107 <- month_data_107 %>%
+      st_join(tainan_boundary, join = st_within) %>%
+      group_by(TOWN_ID) %>%
+      summarise(density_index = sum(陽性容器合計, na.rm = TRUE) / sum(調查容器合計, na.rm = TRUE) * 100)
+    
+    # Step 2: Spatial join with boundary file
+    merged_data_107 <- tainan_boundary %>%
+      left_join(density_by_town_107 %>% st_drop_geometry(), by = "TOWN_ID") %>%
+      st_as_sf()
+    
+    # Step 3: Assign categories, including handling of zero values
+    q1 <- quantile(merged_data_107$density_index, probs = 0.25, na.rm = TRUE)
+    q3 <- quantile(merged_data_107$density_index, probs = 0.75, na.rm = TRUE)
+    
+    merged_data_107$density_category <- ifelse(
+      is.na(merged_data_107$density_index) | merged_data_107$density_index == 0, "無數據",  # Grey for 0 or missing values
+      ifelse(
+        merged_data_107$density_index >= q3, "高密度區",
+        ifelse(merged_data_107$density_index <= q1, "低密度區", "一般")
+      )
+    )
+    
+    # Step 4: Create the plot
+    plot <- ggplot() +
+      geom_sf(data = merged_data_107, aes(fill = density_category), color = "black", lwd = 0.3) +
+      scale_fill_manual(
+        values = c("高密度區" = "red", "一般" = "green", "低密度區" = "yellow", "無數據" = "grey"),
+        na.translate = TRUE
+      ) +
+      labs(
+        title = paste("台南市密度分佈圖 - 2018 Month", i),
+        fill = "密度分類"
+      ) +
+      theme_minimal() +
+      theme(
+        plot.title = element_text(color = "white", hjust = 0.5),
+        axis.text = element_text(color = "white"),
+        axis.title = element_text(color = "white"),
+        legend.text = element_text(color = "white"),
+        legend.title = element_text(color = "white"),
+        panel.background = element_rect(fill = "black"),  # Ensure the background is black
+        plot.background = element_rect(fill = "black")    # Set the plot's background to black
+      )
+    
+    
+    # Display the plot
+    print(plot)
+    
+    # Save the plot
+    ggsave(filename = paste0("density_map_2018_month_", i, ".png"), plot = plot, dpi = 300)
+  } else {
+    # Handle months with no data
+    cat("No data for Month", i, "\n")
+  }
+}
+
+
+#2019(108)
+# Split the data by the 'month' column into a list
+month_data_list_108 <- split(yearly_data_108, yearly_data_108$month)
+
+# Prepare a list to store cleaned data for each month
+cleaned_monthly_data_108 <- list()
+
+for (i in 1:12) {
+  # Access the data for the current month
+  month_data_108 <- month_data_list_108[[as.character(i)]]
+  
+  # Skip if the data is NULL or empty
+  if (!is.null(month_data_108) && nrow(month_data_108) > 0) {
+    # Extract coordinates
+    coords <- st_coordinates(month_data_108)
+    month_data_108$經度 <- coords[, 1]
+    month_data_108$緯度 <- coords[, 2]
+    
+    # Convert and clean 容器指數
+    month_data_108$容器指數 <- as.numeric(month_data_108$容器指數)
+    month_data_108 <- month_data_108 %>% filter(!is.na(容器指數))
+    
+    # Convert and clean 容器級數
+    month_data_108$容器指數 <- as.numeric(month_data_108$容器級數)
+    month_data_108 <- month_data_108 %>% filter(!is.na(容器級數))
+    
+    # Store cleaned data in the list
+    cleaned_monthly_data_108[[paste0("Month_", i)]] <- month_data_108
+  } else {
+    cat("No data for Month", i, "\n")
+    cleaned_monthly_data_108[[paste0("Month_", i)]] <- NULL
+  }
+}
+
+monthly_plots_108 <- list()
+
+for (i in 1:12) {
+  # Access cleaned data for the current month
+  month_data_108 <- cleaned_monthly_data_108[[paste0("Month_", i)]]
+  
+  if (!is.null(month_data_108) && nrow(month_data_108) > 0) {
+    # Create the plot
+    plot <- ggplot(month_data_108, aes(x = 經度, y = 緯度)) +
+      geom_point(aes(color = 容器指數), size = 2, alpha = 0.7) +
+      labs(
+        title = paste("Data for Month", i),
+        x = "Longitude (經度)",
+        y = "Latitude (緯度)",
+        color = "容器指數"
+      ) +
+      theme_minimal()
+    
+    # Store the plot
+    monthly_plots_108[[paste0("Month_", i)]] <- plot
+  } else {
+    cat("No plot for Month", i, "\n")
+    monthly_plots_108[[paste0("Month_", i)]] <- NULL
+  }
+}
+for (i in 1:12) {
+  if (!is.null(monthly_plots_108[[paste0("Month_", i)]])) {
+    print(monthly_plots_108[[paste0("Month_", i)]])
+  }
+}
+
+# 檢查和設置 CRS
+crs_boundary <- st_crs(tainan_boundary)
+crs_yearly_108 <- st_crs(yearly_data_108)
+
+# 如果 CRS 不一致，進行轉換
+if (crs_yearly_108 != crs_boundary) {
+  yearly_data_108 <- st_transform(yearly_data_108, crs_boundary)
+}
+
+# 計算密度指數
+density_by_town_108 <- yearly_data_108 %>%
+  st_join(tainan_boundary, join = st_within) %>%
+  group_by(TOWN_ID) %>%  # 確保這裡的欄位名正確
+  summarise(density_index = sum(陽性容器合計) / sum(調查容器合計) * 100)
+
+# 檢查 CRS
+crs_boundary <- st_crs(tainan_boundary)
+crs_density_108 <- st_crs(density_by_town_108)
+
+# 如果 CRS 不一致，進行轉換
+if (crs_boundary != crs_density_108) {
+  density_by_town_108 <- st_transform(density_by_town_108, crs_boundary)
+}
+
+
+
+st_crs(density_by_town_108) # 檢查 CRS
+st_crs(tainan_boundary) # 檢查 CRS
+
+# 如果 CRS 不一致，轉換 CRS
+density_by_town_108 <- st_transform(density_by_town_108, st_crs(tainan_boundary))
+
+
+
+
+
+# Prepare a list to store monthly data
+monthly_density_data <- list()
+monthly_plots_108 <- list()
+
+
+
+
+for (i in 1:12) {
+  # Filter data for the current month
+  month_data_108 <- yearly_data_108 %>% filter(month == i)
+  
+  if (nrow(month_data_108) > 0) {
+    # Step 1: Calculate density index
+    density_by_town_108 <- month_data_108 %>%
+      st_join(tainan_boundary, join = st_within) %>%
+      group_by(TOWN_ID) %>%
+      summarise(density_index = sum(陽性容器合計, na.rm = TRUE) / sum(調查容器合計, na.rm = TRUE) * 100)
+    
+    # Step 2: Spatial join with boundary file
+    merged_data_108 <- tainan_boundary %>%
+      left_join(density_by_town_108 %>% st_drop_geometry(), by = "TOWN_ID") %>%
+      st_as_sf()
+    
+    # Step 3: Assign categories, including handling of zero values
+    q1 <- quantile(merged_data_108$density_index, probs = 0.25, na.rm = TRUE)
+    q3 <- quantile(merged_data_108$density_index, probs = 0.75, na.rm = TRUE)
+    
+    merged_data_108$density_category <- ifelse(
+      is.na(merged_data_108$density_index) | merged_data_108$density_index == 0, "無數據",  # Grey for 0 or missing values
+      ifelse(
+        merged_data_108$density_index >= q3, "高密度區",
+        ifelse(merged_data_108$density_index <= q1, "低密度區", "一般")
+      )
+    )
+    
+    # Step 4: Create the plot
+    plot <- ggplot() +
+      geom_sf(data = merged_data_108, aes(fill = density_category), color = "black", lwd = 0.3) +
+      scale_fill_manual(
+        values = c("高密度區" = "red", "一般" = "green", "低密度區" = "yellow", "無數據" = "grey"),
+        na.translate = TRUE
+      ) +
+      labs(
+        title = paste("台南市密度分佈圖 - 2019 Month", i),
+        fill = "密度分類"
+      ) +
+      theme_minimal() +
+      theme(
+        plot.title = element_text(color = "white", hjust = 0.5),
+        axis.text = element_text(color = "white"),
+        axis.title = element_text(color = "white"),
+        legend.text = element_text(color = "white"),
+        legend.title = element_text(color = "white"),
+        panel.background = element_rect(fill = "black"),  # Ensure the background is black
+        plot.background = element_rect(fill = "black") 
+      )
+    
+    # Display the plot
+    print(plot)
+    # Save the plot
+    ggsave(filename = paste0("density_map_2019_month_", i, ".png"), plot = plot, dpi = 300)
+   
+  } else {
+    # Handle months with no data
+    cat("No data for Month", i, "\n")
+  }
+}
+
+#2020(109)
+# Split the data by the 'month' column into a list
+month_data_list_109 <- split(yearly_data_109, yearly_data_109$month)
+
+# Prepare a list to store cleaned data for each month
+cleaned_monthly_data_109 <- list()
+
+for (i in 1:12) {
+  # Access the data for the current month
+  month_data_109 <- month_data_list_109[[as.character(i)]]
+  
+  # Skip if the data is NULL or empty
+  if (!is.null(month_data_109) && nrow(month_data_109) > 0) {
+    # Extract coordinates
+    coords <- st_coordinates(month_data_109)
+    month_data_109$經度 <- coords[, 1]
+    month_data_109$緯度 <- coords[, 2]
+    
+    # Convert and clean 容器指數
+    month_data_109$容器指數 <- as.numeric(month_data_109$容器指數)
+    month_data_109 <- month_data_109 %>% filter(!is.na(容器指數))
+    
+    # Convert and clean 容器級數
+    month_data_109$容器指數 <- as.numeric(month_data_109$容器級數)
+    month_data_109 <- month_data_109 %>% filter(!is.na(容器級數))
+    
+    # Store cleaned data in the list
+    cleaned_monthly_data_109[[paste0("Month_", i)]] <- month_data_109
+  } else {
+    cat("No data for Month", i, "\n")
+    cleaned_monthly_data_109[[paste0("Month_", i)]] <- NULL
+  }
+}
+
+monthly_plots_109 <- list()
+
+for (i in 1:12) {
+  # Access cleaned data for the current month
+  month_data_109 <- cleaned_monthly_data_109[[paste0("Month_", i)]]
+  
+  if (!is.null(month_data_109) && nrow(month_data_109) > 0) {
+    # Create the plot
+    plot <- ggplot(month_data_109, aes(x = 經度, y = 緯度)) +
+      geom_point(aes(color = 容器指數), size = 2, alpha = 0.7) +
+      labs(
+        title = paste("Data for Month", i),
+        x = "Longitude (經度)",
+        y = "Latitude (緯度)",
+        color = "容器指數"
+      ) +
+      theme_minimal()
+    
+    # Store the plot
+    monthly_plots_109[[paste0("Month_", i)]] <- plot
+  } else {
+    cat("No plot for Month", i, "\n")
+    monthly_plots_109[[paste0("Month_", i)]] <- NULL
+  }
+}
+for (i in 1:12) {
+  if (!is.null(monthly_plots_109[[paste0("Month_", i)]])) {
+    print(monthly_plots_109[[paste0("Month_", i)]])
+  }
+}
+
+
+# 檢查和設置 CRS
+crs_boundary <- st_crs(tainan_boundary)
+crs_yearly_109 <- st_crs(yearly_data_105)
+
+# 如果 CRS 不一致，進行轉換
+if (crs_yearly_109 != crs_boundary) {
+  yearly_data_105 <- st_transform(yearly_data_105, crs_boundary)
+}
+
+# 計算密度指數
+density_by_town_109 <- yearly_data_105 %>%
+  st_join(tainan_boundary, join = st_within) %>%
+  group_by(TOWN_ID) %>%  # 確保這裡的欄位名正確
+  summarise(density_index = sum(陽性容器合計) / sum(調查容器合計) * 100)
+
+# 檢查 CRS
+crs_density_109 <- st_crs(density_by_town_109)
+
+# 如果 CRS 不一致，進行轉換
+if (crs_boundary != crs_density_109) {
+  density_by_town_109 <- st_transform(density_by_town_109, crs_boundary)
+}
+
+
+
+st_crs(density_by_town_109) # 檢查 CRS
+st_crs(tainan_boundary) # 檢查 CRS
+
+# 如果 CRS 不一致，轉換 CRS
+density_by_town_109 <- st_transform(density_by_town_109, st_crs(tainan_boundary))
+
+
+
+
+
+# Prepare a list to store monthly data
+monthly_density_data <- list()
+monthly_plots <- list()
+
+
+
+
+for (i in 1:12) {
+  # Filter data for the current month
+  month_data <- yearly_data_105 %>% filter(month == i)
+  
+  if (nrow(month_data) > 0) {
+    # Step 1: Calculate density index
+    density_by_town_109 <- month_data %>%
+      st_join(tainan_boundary, join = st_within) %>%
+      group_by(TOWN_ID) %>%
+      summarise(density_index = sum(陽性容器合計, na.rm = TRUE) / sum(調查容器合計, na.rm = TRUE) * 100)
+    
+    # Step 2: Spatial join with boundary file
+    merged_data_109 <- tainan_boundary %>%
+      left_join(density_by_town_109 %>% st_drop_geometry(), by = "TOWN_ID") %>%
+      st_as_sf()
+    
+    # Step 3: Assign categories, including handling of zero values
+    q1 <- quantile(merged_data_109$density_index, probs = 0.25, na.rm = TRUE)
+    q3 <- quantile(merged_data_109$density_index, probs = 0.75, na.rm = TRUE)
+    
+    merged_data_109$density_category <- ifelse(
+      is.na(merged_data_109$density_index) | merged_data_109$density_index == 0, "無數據",  # Grey for 0 or missing values
+      ifelse(
+        merged_data_109$density_index >= q3, "高密度區",
+        ifelse(merged_data_109$density_index <= q1, "低密度區", "一般")
+      )
+    )
+    
+    # Step 4: Create the plot
+    plot <- ggplot() +
+      geom_sf(data = merged_data_109, aes(fill = density_category), color = "black", lwd = 0.3) +
+      scale_fill_manual(
+        values = c("高密度區" = "red", "一般" = "green", "低密度區" = "yellow", "無數據" = "grey"),
+        na.translate = TRUE
+      ) +
+      labs(
+        title = paste("台南市密度分佈圖 - 2020 Month", i),
+        fill = "密度分類"
+      ) +
+      theme_minimal() +
+      theme(
+        plot.title = element_text(color = "white", hjust = 0.5),
+        axis.text = element_text(color = "white"),
+        axis.title = element_text(color = "white"),
+        legend.text = element_text(color = "white"),
+        legend.title = element_text(color = "white"),
+        panel.background = element_rect(fill = "black"),  # Ensure the background is black
+        plot.background = element_rect(fill = "black") 
+      )
+    
+    # Display the plot
+    print(plot)
+    # Save the plot
+    ggsave(filename = paste0("density_map_2020_month_", i, ".png"), plot = plot, dpi = 300)
+  } else {
+    # Handle months with no data
+    cat("No data for Month", i, "\n")
+  }
+}
+
+#2021(110)
+# Split the data by the 'month' column into a list
+month_data_list_110 <- split(yearly_data_110, yearly_data_110$month)
+
+# Prepare a list to store cleaned data for each month
+cleaned_monthly_data_110 <- list()
+
+for (i in 1:12) {
+  # Access the data for the current month
+  month_data_110 <- month_data_list_110[[as.character(i)]]
+  
+  # Skip if the data is NULL or empty
+  if (!is.null(month_data_110) && nrow(month_data_110) > 0) {
+    # Extract coordinates
+    coords <- st_coordinates(month_data_110)
+    month_data_110$經度 <- coords[, 1]
+    month_data_110$緯度 <- coords[, 2]
+    
+    # Convert and clean 容器指數
+    month_data_110$容器指數 <- as.numeric(month_data_110$容器指數)
+    month_data_110 <- month_data_110 %>% filter(!is.na(容器指數))
+    
+    # Convert and clean 容器級數
+    month_data_110$容器指數 <- as.numeric(month_data_110$容器級數)
+    month_data_110 <- month_data_110 %>% filter(!is.na(容器級數))
+    
+    # Store cleaned data in the list
+    cleaned_monthly_data_110[[paste0("Month_", i)]] <- month_data_110
+  } else {
+    cat("No data for Month", i, "\n")
+    cleaned_monthly_data_110[[paste0("Month_", i)]] <- NULL
+  }
+}
+
+monthly_plots_110 <- list()
+
+for (i in 1:12) {
+  # Access cleaned data for the current month
+  month_data_110 <- cleaned_monthly_data_110[[paste0("Month_", i)]]
+  
+  if (!is.null(month_data_110) && nrow(month_data_110) > 0) {
+    # Create the plot
+    plot <- ggplot(month_data_110, aes(x = 經度, y = 緯度)) +
+      geom_point(aes(color = 容器指數), size = 2, alpha = 0.7) +
+      labs(
+        title = paste("Data for Month", i),
+        x = "Longitude (經度)",
+        y = "Latitude (緯度)",
+        color = "容器指數"
+      ) +
+      theme_minimal()
+    
+    # Store the plot
+    monthly_plots_110[[paste0("Month_", i)]] <- plot
+  } else {
+    cat("No plot for Month", i, "\n")
+    monthly_plots_110[[paste0("Month_", i)]] <- NULL
+  }
+}
+for (i in 1:12) {
+  if (!is.null(monthly_plots_110[[paste0("Month_", i)]])) {
+    print(monthly_plots_110[[paste0("Month_", i)]])
+  }
+}
+
+
+
+# 讀取行政區 shapefile
+tainan_boundary <- st_read("C:/Users/jonat/OneDrive/Desktop/tainan_town/tainan_town")
+
+# 檢查和設置 CRS
+crs_boundary <- st_crs(tainan_boundary)
+crs_yearly_110 <- st_crs(yearly_data_110)
+
+# 如果 CRS 不一致，進行轉換
+if (crs_yearly_110 != crs_boundary) {
+  yearly_data_110 <- st_transform(yearly_data_110, crs_boundary)
+}
+
+# 計算密度指數
+density_by_town_110 <- yearly_data_110 %>%
+  st_join(tainan_boundary, join = st_within) %>%
+  group_by(TOWN_ID) %>%  # 確保這裡的欄位名正確
+  summarise(density_index = sum(陽性容器合計) / sum(調查容器合計) * 100)
+
+# 檢查 CRS
+crs_boundary <- st_crs(tainan_boundary)
+crs_density_110 <- st_crs(density_by_town_110)
+
+# 如果 CRS 不一致，進行轉換
+if (crs_boundary != crs_density_110) {
+  density_by_town_110 <- st_transform(density_by_town_110, crs_boundary)
+}
+
+
+
+st_crs(density_by_town_110) # 檢查 CRS
+st_crs(tainan_boundary) # 檢查 CRS
+
+# 如果 CRS 不一致，轉換 CRS
+density_by_town_110 <- st_transform(density_by_town_110, st_crs(tainan_boundary))
+
+
+
+
+
+# Prepare a list to store monthly data
+monthly_density_data <- list()
+monthly_plots_110 <- list()
+
+
+
+
+for (i in 1:12) {
+  # Filter data for the current month
+  month_data_110 <- yearly_data_110 %>% filter(month == i)
+  
+  if (nrow(month_data_110) > 0) {
+    # Step 1: Calculate density index
+    density_by_town_110 <- month_data_110 %>%
+      st_join(tainan_boundary, join = st_within) %>%
+      group_by(TOWN_ID) %>%
+      summarise(density_index = sum(陽性容器合計, na.rm = TRUE) / sum(調查容器合計, na.rm = TRUE) * 100)
+    
+    # Step 2: Spatial join with boundary file
+    merged_data_110 <- tainan_boundary %>%
+      left_join(density_by_town_110 %>% st_drop_geometry(), by = "TOWN_ID") %>%
+      st_as_sf()
+    
+    # Step 3: Assign categories, including handling of zero values
+    q1 <- quantile(merged_data_110$density_index, probs = 0.25, na.rm = TRUE)
+    q3 <- quantile(merged_data_110$density_index, probs = 0.75, na.rm = TRUE)
+    
+    merged_data_110$density_category <- ifelse(
+      is.na(merged_data_110$density_index) | merged_data_110$density_index == 0, "無數據",  # Grey for 0 or missing values
+      ifelse(
+        merged_data_110$density_index >= q3, "高密度區",
+        ifelse(merged_data_110$density_index <= q1, "低密度區", "一般")
+      )
+    )
+    
+    # Step 4: Create the plot
+    plot <- ggplot() +
+      geom_sf(data = merged_data_110, aes(fill = density_category), color = "black", lwd = 0.3) +
+      scale_fill_manual(
+        values = c("高密度區" = "red", "一般" = "green", "低密度區" = "yellow", "無數據" = "grey"),
+        na.translate = TRUE
+      ) +
+      labs(
+        title = paste("台南市密度分佈圖 - 2021 Month", i),
+        fill = "密度分類"
+      ) +
+      theme_minimal() +
+      theme(
+        plot.title = element_text(color = "white", hjust = 0.5),
+        axis.text = element_text(color = "white"),
+        axis.title = element_text(color = "white"),
+        legend.text = element_text(color = "white"),
+        legend.title = element_text(color = "white"),
+        panel.background = element_rect(fill = "black"),  # Ensure the background is black
+        plot.background = element_rect(fill = "black") 
+      )
+    
+    # Display the plot
+    print(plot)
+    # Save the plot
+    ggsave(filename = paste0("density_map_2021_month_", i, ".png"), plot = plot, dpi = 300)
+  } else {
+    # Handle months with no data
+    cat("No data for Month", i, "\n")
+  }
+}
+
+#2022(111)
+# Split the data by the 'month' column into a list
+month_data_list_111 <- split(yearly_data_111, yearly_data_111$month)
+
+# Prepare a list to store cleaned data for each month
+cleaned_monthly_data_111 <- list()
+
+for (i in 1:12) {
+  # Access the data for the current month
+  month_data_111 <- month_data_list_111[[as.character(i)]]
+  
+  # Skip if the data is NULL or empty
+  if (!is.null(month_data_111) && nrow(month_data_111) > 0) {
+    # Extract coordinates
+    coords <- st_coordinates(month_data_111)
+    month_data_111$經度 <- coords[, 1]
+    month_data_111$緯度 <- coords[, 2]
+    
+    # Convert and clean 容器指數
+    month_data_111$容器指數 <- as.numeric(month_data_111$容器指數)
+    month_data_111 <- month_data_111 %>% filter(!is.na(容器指數))
+    
+    # Convert and clean 容器級數
+    month_data_111$容器指數 <- as.numeric(month_data_111$容器級數)
+    month_data_111 <- month_data_111 %>% filter(!is.na(容器級數))
+    
+    # Store cleaned data in the list
+    cleaned_monthly_data_111[[paste0("Month_", i)]] <- month_data_111
+  } else {
+    cat("No data for Month", i, "\n")
+    cleaned_monthly_data_111[[paste0("Month_", i)]] <- NULL
+  }
+}
+
+monthly_plots_111 <- list()
+
+for (i in 1:12) {
+  # Access cleaned data for the current month
+  month_data_111 <- cleaned_monthly_data_111[[paste0("Month_", i)]]
+  
+  if (!is.null(month_data_111) && nrow(month_data_111) > 0) {
+    # Create the plot
+    plot <- ggplot(month_data_111, aes(x = 經度, y = 緯度)) +
+      geom_point(aes(color = 容器指數), size = 2, alpha = 0.7) +
+      labs(
+        title = paste("Data for Month", i),
+        x = "Longitude (經度)",
+        y = "Latitude (緯度)",
+        color = "容器指數"
+      ) +
+      theme_minimal()
+    
+    # Store the plot
+    monthly_plots_111[[paste0("Month_", i)]] <- plot
+  } else {
+    cat("No plot for Month", i, "\n")
+    monthly_plots_111[[paste0("Month_", i)]] <- NULL
+  }
+}
+for (i in 1:12) {
+  if (!is.null(monthly_plots_111[[paste0("Month_", i)]])) {
+    print(monthly_plots_111[[paste0("Month_", i)]])
+  }
+}
+
+
+
+
+
+
+# 讀取行政區 shapefile
+tainan_boundary <- st_read("C:/Users/jonat/OneDrive/Desktop/tainan_town/tainan_town")
+
+# 檢查和設置 CRS
+crs_boundary <- st_crs(tainan_boundary)
+crs_yearly_111 <- st_crs(yearly_data_111)
+
+# 如果 CRS 不一致，進行轉換
+if (crs_yearly_111 != crs_boundary) {
+  yearly_data_111 <- st_transform(yearly_data_111, crs_boundary)
+}
+
+# 計算密度指數
+density_by_town_111 <- yearly_data_111 %>%
+  st_join(tainan_boundary, join = st_within) %>%
+  group_by(TOWN_ID) %>%  # 確保這裡的欄位名正確
+  summarise(density_index = sum(陽性容器合計) / sum(調查容器合計) * 100)
+
+# 檢查 CRS
+crs_boundary <- st_crs(tainan_boundary)
+crs_density_111 <- st_crs(density_by_town_111)
+
+# 如果 CRS 不一致，進行轉換
+if (crs_boundary != crs_density_111) {
+  density_by_town_111 <- st_transform(density_by_town_111, crs_boundary)
+}
+
+
+
+st_crs(density_by_town_111) # 檢查 CRS
+st_crs(tainan_boundary) # 檢查 CRS
+
+# 如果 CRS 不一致，轉換 CRS
+density_by_town_111 <- st_transform(density_by_town_111, st_crs(tainan_boundary))
+
+
+
+
+
+# Prepare a list to store monthly data
+monthly_density_data <- list()
+monthly_plots_111 <- list()
+
+
+
+
+for (i in 1:12) {
+  # Filter data for the current month
+  month_data_111 <- yearly_data_111 %>% filter(month == i)
+  
+  if (nrow(month_data_111) > 0) {
+    # Step 1: Calculate density index
+    density_by_town_111 <- month_data_111 %>%
+      st_join(tainan_boundary, join = st_within) %>%
+      group_by(TOWN_ID) %>%
+      summarise(density_index = sum(陽性容器合計, na.rm = TRUE) / sum(調查容器合計, na.rm = TRUE) * 100)
+    
+    # Step 2: Spatial join with boundary file
+    merged_data_111 <- tainan_boundary %>%
+      left_join(density_by_town_111 %>% st_drop_geometry(), by = "TOWN_ID") %>%
+      st_as_sf()
+    
+    # Step 3: Assign categories, including handling of zero values
+    q1 <- quantile(merged_data_111$density_index, probs = 0.25, na.rm = TRUE)
+    q3 <- quantile(merged_data_111$density_index, probs = 0.75, na.rm = TRUE)
+    
+    merged_data_111$density_category <- ifelse(
+      is.na(merged_data_111$density_index) | merged_data_111$density_index == 0, "無數據",  # Grey for 0 or missing values
+      ifelse(
+        merged_data_111$density_index >= q3, "高密度區",
+        ifelse(merged_data_111$density_index <= q1, "低密度區", "一般")
+      )
+    )
+    
+    # Step 4: Create the plot
+    plot <- ggplot() +
+      geom_sf(data = merged_data_111, aes(fill = density_category), color = "black", lwd = 0.3) +
+      scale_fill_manual(
+        values = c("高密度區" = "red", "一般" = "green", "低密度區" = "yellow", "無數據" = "grey"),
+        na.translate = TRUE
+      ) +
+      labs(
+        title = paste("台南市密度分佈圖 - 2022 Month", i),
+        fill = "密度分類"
+      ) +
+      theme_minimal() +
+      theme(
+        plot.title = element_text(color = "white", hjust = 0.5),
+        axis.text = element_text(color = "white"),
+        axis.title = element_text(color = "white"),
+        legend.text = element_text(color = "white"),
+        legend.title = element_text(color = "white"),
+        panel.background = element_rect(fill = "black"),  # Ensure the background is black
+        plot.background = element_rect(fill = "black") 
+      )
+    
+    # Display the plot
+    print(plot)
+    # Save the plot
+    ggsave(filename = paste0("density_map_2022_month_", i, ".png"), plot = plot, dpi = 300)
+  } else {
+    # Handle months with no data
+    cat("No data for Month", i, "\n")
+  }
+}
+
+#2023(112)
+# Split the data by the 'month' column into a list
+month_data_list_112 <- split(yearly_data_112, yearly_data_112$month)
+
+# Prepare a list to store cleaned data for each month
+cleaned_monthly_data112 <- list()
+
+for (i in 1:12) {
+  # Access the data for the current month
+  month_data_112 <- month_data_list_112[[as.character(i)]]
+  
+  # Skip if the data is NULL or empty
+  if (!is.null(month_data_112) && nrow(month_data_112) > 0) {
+    # Extract coordinates
+    coords <- st_coordinates(month_data_112)
+    month_data_112$經度 <- coords[, 1]
+    month_data_112$緯度 <- coords[, 2]
+    
+    # Convert and clean 容器指數
+    month_data_112$容器指數 <- as.numeric(month_data_112$容器指數)
+    month_data_112 <- month_data_112 %>% filter(!is.na(容器指數))
+    
+    # Convert and clean 容器級數
+    month_data_112$容器指數 <- as.numeric(month_data_112$容器級數)
+    month_data_112 <- month_data_112 %>% filter(!is.na(容器級數))
+    
+    # Store cleaned data in the list
+    cleaned_monthly_data112[[paste0("Month_", i)]] <- month_data_112
+  } else {
+    cat("No data for Month", i, "\n")
+    cleaned_monthly_data112[[paste0("Month_", i)]] <- NULL
+  }
+}
+
+monthly_plots_112 <- list()
+
+for (i in 1:12) {
+  # Access cleaned data for the current month
+  month_data_112 <- cleaned_monthly_data112[[paste0("Month_", i)]]
+  
+  if (!is.null(month_data_112) && nrow(month_data_112) > 0) {
+    # Create the plot
+    plot <- ggplot(month_data_112, aes(x = 經度, y = 緯度)) +
+      geom_point(aes(color = 容器指數), size = 2, alpha = 0.7) +
+      labs(
+        title = paste("Data for Month", i),
+        x = "Longitude (經度)",
+        y = "Latitude (緯度)",
+        color = "容器指數"
+      ) +
+      theme_minimal()
+    
+    # Store the plot
+    monthly_plots_112[[paste0("Month_", i)]] <- plot
+  } else {
+    cat("No plot for Month", i, "\n")
+    monthly_plots_112[[paste0("Month_", i)]] <- NULL
+  }
+}
+for (i in 1:12) {
+  if (!is.null(monthly_plots_112[[paste0("Month_", i)]])) {
+    print(monthly_plots_112[[paste0("Month_", i)]])
+  }
+}
+
+
+
+# 讀取行政區 shapefile
+tainan_boundary <- st_read("C:/Users/jonat/OneDrive/Desktop/tainan_town/tainan_town")
+
+# 檢查和設置 CRS
+crs_boundary <- st_crs(tainan_boundary)
+crs_yearly_112 <- st_crs(yearly_data_112)
+
+# 如果 CRS 不一致，進行轉換
+if (crs_yearly_112 != crs_boundary) {
+  yearly_data_112 <- st_transform(yearly_data_112, crs_boundary)
+}
+
+# 計算密度指數
+density_by_town_112 <- yearly_data_112 %>%
+  st_join(tainan_boundary, join = st_within) %>%
+  group_by(TOWN_ID) %>%  # 確保這裡的欄位名正確
+  summarise(density_index = sum(陽性容器合計) / sum(調查容器合計) * 100)
+
+# 檢查 CRS
+crs_boundary <- st_crs(tainan_boundary)
+crs_density_112 <- st_crs(density_by_town_112)
+
+# 如果 CRS 不一致，進行轉換
+if (crs_boundary != crs_density_112) {
+  density_by_town_112 <- st_transform(density_by_town_112, crs_boundary)
+}
+
+
+
+st_crs(density_by_town_112) # 檢查 CRS
+st_crs(tainan_boundary) # 檢查 CRS
+
+# 如果 CRS 不一致，轉換 CRS
+density_by_town_112 <- st_transform(density_by_town_112, st_crs(tainan_boundary))
+
+
+
+
+
+# Prepare a list to store monthly data
+monthly_density_data <- list()
+monthly_plots_112 <- list()
+
+
+
+
+for (i in 1:12) {
+  # Filter data for the current month
+  month_data_112 <- yearly_data_112 %>% filter(month == i)
+  
+  if (nrow(month_data_112) > 0) {
+    # Step 1: Calculate density index
+    density_by_town_112 <- month_data_112 %>%
+      st_join(tainan_boundary, join = st_within) %>%
+      group_by(TOWN_ID) %>%
+      summarise(density_index = sum(陽性容器合計, na.rm = TRUE) / sum(調查容器合計, na.rm = TRUE) * 100)
+    
+    # Step 2: Spatial join with boundary file
+    merged_data_112 <- tainan_boundary %>%
+      left_join(density_by_town_112 %>% st_drop_geometry(), by = "TOWN_ID") %>%
+      st_as_sf()
+    
+    # Step 3: Assign categories, including handling of zero values
+    q1 <- quantile(merged_data_112$density_index, probs = 0.25, na.rm = TRUE)
+    q3 <- quantile(merged_data_112$density_index, probs = 0.75, na.rm = TRUE)
+    
+    merged_data_112$density_category <- ifelse(
+      is.na(merged_data_112$density_index) | merged_data_112$density_index == 0, "無數據",  # Grey for 0 or missing values
+      ifelse(
+        merged_data_112$density_index >= q3, "高密度區",
+        ifelse(merged_data_112$density_index <= q1, "低密度區", "一般")
+      )
+    )
+    
+    # Step 4: Create the plot
+    plot <- ggplot() +
+      geom_sf(data = merged_data_112, aes(fill = density_category), color = "black", lwd = 0.3) +
+      scale_fill_manual(
+        values = c("高密度區" = "red", "一般" = "green", "低密度區" = "yellow", "無數據" = "grey"),
+        na.translate = TRUE
+      ) +
+      labs(
+        title = paste("台南市密度分佈圖 - 2023 Month", i),
+        fill = "密度分類"
+      ) +
+      theme_minimal() +
+      theme(
+        plot.title = element_text(color = "white", hjust = 0.5),
+        axis.text = element_text(color = "white"),
+        axis.title = element_text(color = "white"),
+        legend.text = element_text(color = "white"),
+        legend.title = element_text(color = "white"),
+        panel.background = element_rect(fill = "black"),  # Ensure the background is black
+        plot.background = element_rect(fill = "black") 
+      )
+    
+    # Display the plot
+    print(plot)
+    # Save the plot
+    ggsave(filename = paste0("density_map_2023_month_", i, ".png"), plot = plot, dpi = 300)
+  } else {
+    # Handle months with no data
+    cat("No data for Month", i, "\n")
+  }
+}
+
+#2024(113)
+# Split the data by the 'month' column into a list
+month_data_list_113 <- split(yearly_data_113, yearly_data_113$month)
+
+# Prepare a list to store cleaned data for each month
+cleaned_monthly_data_113 <- list()
+
+for (i in 1:12) {
+  # Access the data for the current month
+  month_data_113 <- month_data_list_113[[as.character(i)]]
+  
+  # Skip if the data is NULL or empty
+  if (!is.null(month_data_113) && nrow(month_data_113) > 0) {
+    # Extract coordinates
+    coords <- st_coordinates(month_data_113)
+    month_data_113$經度 <- coords[, 1]
+    month_data_113$緯度 <- coords[, 2]
+    
+    # Convert and clean 容器指數
+    month_data_113$容器指數 <- as.numeric(month_data_113$容器指數)
+    month_data_113 <- month_data_113 %>% filter(!is.na(容器指數))
+    
+    # Convert and clean 容器級數
+    month_data_113$容器指數 <- as.numeric(month_data_113$容器級數)
+    month_data_113 <- month_data_113 %>% filter(!is.na(容器級數))
+    
+    # Store cleaned data in the list
+    cleaned_monthly_data_113[[paste0("Month_", i)]] <- month_data_113
+  } else {
+    cat("No data for Month", i, "\n")
+    cleaned_monthly_data_113[[paste0("Month_", i)]] <- NULL
+  }
+}
+
+monthly_plots_113 <- list()
+
+for (i in 1:12) {
+  # Access cleaned data for the current month
+  month_data_113 <- cleaned_monthly_data_113[[paste0("Month_", i)]]
+  
+  if (!is.null(month_data_113) && nrow(month_data_113) > 0) {
+    # Create the plot
+    plot <- ggplot(month_data_113, aes(x = 經度, y = 緯度)) +
+      geom_point(aes(color = 容器指數), size = 2, alpha = 0.7) +
+      labs(
+        title = paste("Data for Month", i),
+        x = "Longitude (經度)",
+        y = "Latitude (緯度)",
+        color = "容器指數"
+      ) +
+      theme_minimal()
+    
+    # Store the plot
+    monthly_plots_113[[paste0("Month_", i)]] <- plot
+  } else {
+    cat("No plot for Month", i, "\n")
+    monthly_plots_113[[paste0("Month_", i)]] <- NULL
+  }
+}
+for (i in 1:12) {
+  if (!is.null(monthly_plots_113[[paste0("Month_", i)]])) {
+    print(monthly_plots_113[[paste0("Month_", i)]])
+  }
+}
+
+
+
+
+
+
+
+
+# 讀取行政區 shapefile
+tainan_boundary <- st_read("C:/Users/jonat/OneDrive/Desktop/tainan_town/tainan_town")
+
+# 檢查和設置 CRS
+crs_boundary <- st_crs(tainan_boundary)
+crs_yearly_113 <- st_crs(yearly_data_113)
+
+# 如果 CRS 不一致，進行轉換
+if (crs_yearly_113 != crs_boundary) {
+  yearly_data_113 <- st_transform(yearly_data_113, crs_boundary)
+}
+
+# 計算密度指數
+density_by_town_113 <- yearly_data_113 %>%
+  st_join(tainan_boundary, join = st_within) %>%
+  group_by(TOWN_ID) %>%  # 確保這裡的欄位名正確
+  summarise(density_index = sum(陽性容器合計) / sum(調查容器合計) * 100)
+
+# 檢查 CRS
+crs_boundary <- st_crs(tainan_boundary)
+crs_density_113 <- st_crs(density_by_town_113)
+
+# 如果 CRS 不一致，進行轉換
+if (crs_boundary != crs_density_113) {
+  density_by_town_113 <- st_transform(density_by_town_113, crs_boundary)
+}
+
+
+
+st_crs(density_by_town_113) # 檢查 CRS
+st_crs(tainan_boundary) # 檢查 CRS
+
+# 如果 CRS 不一致，轉換 CRS
+density_by_town_113 <- st_transform(density_by_town_113, st_crs(tainan_boundary))
+
+
+
+
+
+# Prepare a list to store monthly data
+monthly_density_data <- list()
+monthly_plots_113 <- list()
+
+
+
+
+for (i in 1:12) {
+  # Filter data for the current month
+  month_data_113 <- yearly_data_113 %>% filter(month == i)
+  
+  if (nrow(month_data_113) > 0) {
+    # Step 1: Calculate density index
+    density_by_town_113 <- month_data_113 %>%
+      st_join(tainan_boundary, join = st_within) %>%
+      group_by(TOWN_ID) %>%
+      summarise(density_index = sum(陽性容器合計, na.rm = TRUE) / sum(調查容器合計, na.rm = TRUE) * 100)
+    
+    # Step 2: Spatial join with boundary file
+    merged_data_113 <- tainan_boundary %>%
+      left_join(density_by_town_113 %>% st_drop_geometry(), by = "TOWN_ID") %>%
+      st_as_sf()
+    
+    # Step 3: Assign categories, including handling of zero values
+    q1 <- quantile(merged_data_113$density_index, probs = 0.25, na.rm = TRUE)
+    q3 <- quantile(merged_data_113$density_index, probs = 0.75, na.rm = TRUE)
+    
+    merged_data_113$density_category <- ifelse(
+      is.na(merged_data_113$density_index) | merged_data_113$density_index == 0, "無數據",  # Grey for 0 or missing values
+      ifelse(
+        merged_data_113$density_index >= q3, "高密度區",
+        ifelse(merged_data_113$density_index <= q1, "低密度區", "一般")
+      )
+    )
+    
+    # Step 4: Create the plot
+    plot <- ggplot() +
+      geom_sf(data = merged_data_113, aes(fill = density_category), color = "black", lwd = 0.3) +
+      scale_fill_manual(
+        values = c("高密度區" = "red", "一般" = "green", "低密度區" = "yellow", "無數據" = "grey"),
+        na.translate = TRUE
+      ) +
+      labs(
+        title = paste("台南市密度分佈圖 - 2024 Month", i),
+        fill = "密度分類"
+      ) +
+      theme_minimal() +
+      theme(
+        plot.title = element_text(color = "white", hjust = 0.5),
+        axis.text = element_text(color = "white"),
+        axis.title = element_text(color = "white"),
+        legend.text = element_text(color = "white"),
+        legend.title = element_text(color = "white"),
+        panel.background = element_rect(fill = "black"),  # Ensure the background is black
+        plot.background = element_rect(fill = "black") 
+      )
+    
+    # Display the plot
+    print(plot)
+    # Save the plot
+    ggsave(filename = paste0("density_map_2024_month_", i, ".png"), plot = plot, dpi = 300)
+  } else {
+    # Handle months with no data
+    cat("No data for Month", i, "\n")
+  }
+}
+
+knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/For Final/Yearly Plot.png")
+knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/For Final/comparison of positive cases and container indices over time.png")
+knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/For Final/Seasonal BI.png")
+
+knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/For Final/Seasonal CI.png")
+knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/For Final/Seasonal Positive case.png")
+knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/For Final/Trend of Positive Cases.png")
+
+
+
+```
+
