@@ -1,5 +1,5 @@
 ---
-title: "Final_stat_consult"
+title: "Final_Statistics"
 author: "H24095031"
 date: "2025-01-06"
 output:
@@ -8,8 +8,53 @@ output:
 
 ---
 
-```{r, warning=FALSE, out.width="10%"}
+# Trends, Interventions, and Correlations in Disease Dynamics Over Time
 
+
+### These plots below were provided by Excel tools, therefore no QMD code provided
+## Temporal Pattern Analysis
+```{r}
+knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/For Final/Trend of Positive Cases.png")
+knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/For Final/Seasonal Positive case.png")
+```
+From the plot, it is clear that there is a seasonal pattern, with cases peaking around the same time each year. This suggests that external factors, such as weather, may influence the trends. For instance, mid-season increases in rainfall create stagnant water, which serves as breeding grounds for mosquitoes—key vectors for diseases like dengue or malaria. Warmer temperatures and high humidity during certain seasons may further accelerate mosquito reproduction and activity, increasing transmission rates.
+
+
+## Seasonal Trends for the Breteau Index (BI) and Container Index (CI)
+```{r}
+knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/For Final/Seasonal BI.png")
+knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/For Final/Seasonal CI.png")
+```
+From the Breteau Index and Container Index, we can observe a clear seasonal pattern, with both indices showing an increasing trend in their seasonal components from early to mid-year. This suggests that conditions favorable for mosquito breeding, such as increased rainfall or rising temperatures, tend to occur more frequently during this period.
+
+The Breteau Index, which measures the number of positive mosquito habitats per surveyed area, and the Container Index, which indicates the percentage of water-holding containers with mosquito larvae, both reflect heightened mosquito activity and breeding during this time. These patterns align with the seasonal rise in positive cases, emphasizing the need for intensified vector control measures and surveillance efforts in the early months of the year to mitigate the impact of outbreaks.
+
+## Yearly Container Index
+```{r}
+knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/For Final/Yearly Plot.png")
+
+```
+Interventions Seem Effective:
+The overall decline observed in the Breteau Index (BI) and Container Index (CI), coupled with a reduction in the number of positive cases, suggests that the implemented interventions are having a significant impact. Measures such as eliminating mosquito breeding sites, raising public awareness, and improving vector control strategies appear to be effective in disrupting the transmission cycle and reducing the disease burden over time.
+
+Assumption:
+It is assumed that the Container Index (CI) has a stronger correlation with positive cases compared to the Breteau Index (BI). This could be due to the CI specifically measuring the proportion of water-holding containers with mosquito larvae, which directly represents the density of breeding habitats. Since positive cases are likely more sensitive to changes in the availability of breeding sites, the CI might better capture the direct environmental conditions that lead to increased transmission. In contrast, the BI aggregates data across a larger area, potentially diluting its correlation with case numbers. Further statistical analysis would be needed to confirm this relationship.
+
+
+## Correlation Matrix
+```{r}
+knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/For Final/Correlation_matrix.png")
+knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/For Final/comparison of positive cases and container indices over time.png")
+
+```
+Strategic Planning:
+Public health programs should prioritize reducing container infestation rates (CI) as a core focus of intervention efforts. CI provides a direct measure of the proportion of water-holding containers with mosquito larvae, making it a more actionable target compared to the Breteau Index (BI), which reflects broader mosquito habitat density in relation to surveyed households. By targeting the sources of infestation, such as eliminating or treating containers where larvae are detected, resources can be used more efficiently to disrupt mosquito breeding and reduce transmission risks.
+
+Risk Assessment:
+High CI values are strongly indicative of increased disease transmission risk, as they reflect concentrated mosquito breeding activity. This makes CI a critical indicator for early warning systems, enabling public health authorities to identify and prioritize high-risk areas for immediate intervention. Regular monitoring of CI can also serve as a predictive tool, allowing for proactive deployment of vector control measures before seasonal case surges occur.
+
+## Relative Risk Plot Addition
+```{r, warning=FALSE}
 rm(list = ls())
 # ===== 1. 載入必要的套件 =====
 library(Hmisc)
@@ -198,11 +243,7 @@ for (i in 1:12) {
     monthly_plots_105[[paste0("Month_", i)]] <- NULL
   }
 }
-for (i in 1:12) {
-  if (!is.null(monthly_plots_105[[paste0("Month_", i)]])) {
-    print(monthly_plots_105[[paste0("Month_", i)]])
-  }
-}
+
 
 
 
@@ -236,9 +277,6 @@ if (crs_boundary != crs_density_105) {
 }
 
 
-
-st_crs(density_by_town_105) # 檢查 CRS
-st_crs(tainan_boundary) # 檢查 CRS
 
 # 如果 CRS 不一致，轉換 CRS
 density_by_town_105 <- st_transform(density_by_town_105, st_crs(tainan_boundary))
@@ -304,15 +342,15 @@ for (i in 1:12) {
         plot.background = element_rect(fill = "black") 
       )
     
-    # Display the plot
-    print(plot)
-    # Save the plot
-    ggsave(filename = paste0("density_map_2016_month_", i, ".png"), plot = plot, dpi = 300)
+    
   } else {
     # Handle months with no data
     cat("No data for Month", i, "\n")
   }
 }
+
+knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/merged 2016.png")
+
 
 #2017(106)
 # Split the data by the 'month' column into a list
@@ -373,24 +411,9 @@ for (i in 1:12) {
     monthly_plots_106[[paste0("Month_", i)]] <- NULL
   }
 }
-for (i in 1:12) {
-  if (!is.null(monthly_plots_106[[paste0("Month_", i)]])) {
-    print(monthly_plots_106[[paste0("Month_", i)]])
-  }
-}
 
 
 
-##Testing coba seuma region ada, no value= grey (WORKING)
-library(sf)
-library(dplyr)
-library(ggplot2)
-
-
-
-
-# 讀取行政區 shapefile
-tainan_boundary <- st_read("C:/Users/jonat/OneDrive/Desktop/tainan_town/tainan_town")
 
 # 檢查和設置 CRS
 crs_boundary <- st_crs(tainan_boundary)
@@ -415,11 +438,6 @@ crs_density_106 <- st_crs(density_by_town)
 if (crs_boundary != crs_density_106) {
   density_by_town <- st_transform(density_by_town, crs_boundary)
 }
-
-
-
-st_crs(density_by_town) # 檢查 CRS
-st_crs(tainan_boundary) # 檢查 CRS
 
 # 如果 CRS 不一致，轉換 CRS
 density_by_town <- st_transform(density_by_town, st_crs(tainan_boundary))
@@ -464,6 +482,7 @@ for (i in 1:12) {
     )
     
     # Step 4: Create the plot
+  invisible(
     plot <- ggplot() +
       geom_sf(data = merged_data_106, aes(fill = density_category), color = "black", lwd = 0.3) +
       scale_fill_manual(
@@ -484,16 +503,15 @@ for (i in 1:12) {
         panel.background = element_rect(fill = "black"),  # Ensure the background is black
         plot.background = element_rect(fill = "black") 
       )
+  )
+  
     
-    # Display the plot
-    print(plot)
-    # Save the plot
-    ggsave(filename = paste0("density_map_2017_month_", i, ".png"), plot = plot, dpi = 300)
   } else {
     # Handle months with no data
     cat("No data for Month", i, "\n")
   }
 }
+knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/merge 2017.png")
 
 #2018(107)
 # Split the data by the 'month' column into a list
@@ -554,24 +572,9 @@ for (i in 1:12) {
     monthly_plots_107[[paste0("Month_", i)]] <- NULL
   }
 }
-for (i in 1:12) {
-  if (!is.null(monthly_plots_107[[paste0("Month_", i)]])) {
-    print(monthly_plots_107[[paste0("Month_", i)]])
-  }
-}
 
 
 
-##Testing coba seuma region ada, no value= grey (WORKING)
-library(sf)
-library(dplyr)
-library(ggplot2)
-
-
-
-
-# 讀取行政區 shapefile
-tainan_boundary <- st_read("C:/Users/jonat/OneDrive/Desktop/tainan_town/tainan_town")
 
 # 檢查和設置 CRS
 crs_boundary <- st_crs(tainan_boundary)
@@ -598,8 +601,7 @@ if (crs_boundary != crs_density_107) {
 
 
 
-st_crs(density_by_town_107) # 檢查 CRS
-st_crs(tainan_boundary) # 檢查 CRS
+
 
 # 如果 CRS 不一致，轉換 CRS
 density_by_town_107 <- st_transform(density_by_town_107, st_crs(tainan_boundary))
@@ -644,6 +646,7 @@ for (i in 1:12) {
     )
     
     # Step 4: Create the plot
+  invisible(
     plot <- ggplot() +
       geom_sf(data = merged_data_107, aes(fill = density_category), color = "black", lwd = 0.3) +
       scale_fill_manual(
@@ -664,18 +667,16 @@ for (i in 1:12) {
         panel.background = element_rect(fill = "black"),  # Ensure the background is black
         plot.background = element_rect(fill = "black")    # Set the plot's background to black
       )
+  )
     
-    
-    # Display the plot
-    print(plot)
-    
-    # Save the plot
-    ggsave(filename = paste0("density_map_2018_month_", i, ".png"), plot = plot, dpi = 300)
+
+
   } else {
     # Handle months with no data
     cat("No data for Month", i, "\n")
   }
 }
+knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/merged 2018.png")
 
 
 #2019(108)
@@ -737,11 +738,7 @@ for (i in 1:12) {
     monthly_plots_108[[paste0("Month_", i)]] <- NULL
   }
 }
-for (i in 1:12) {
-  if (!is.null(monthly_plots_108[[paste0("Month_", i)]])) {
-    print(monthly_plots_108[[paste0("Month_", i)]])
-  }
-}
+
 
 # 檢查和設置 CRS
 crs_boundary <- st_crs(tainan_boundary)
@@ -768,9 +765,6 @@ if (crs_boundary != crs_density_108) {
 }
 
 
-
-st_crs(density_by_town_108) # 檢查 CRS
-st_crs(tainan_boundary) # 檢查 CRS
 
 # 如果 CRS 不一致，轉換 CRS
 density_by_town_108 <- st_transform(density_by_town_108, st_crs(tainan_boundary))
@@ -836,16 +830,15 @@ for (i in 1:12) {
         plot.background = element_rect(fill = "black") 
       )
     
-    # Display the plot
-    print(plot)
-    # Save the plot
-    ggsave(filename = paste0("density_map_2019_month_", i, ".png"), plot = plot, dpi = 300)
+    
    
   } else {
     # Handle months with no data
     cat("No data for Month", i, "\n")
   }
 }
+
+knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/merge 2019.png")
 
 #2020(109)
 # Split the data by the 'month' column into a list
@@ -906,11 +899,6 @@ for (i in 1:12) {
     monthly_plots_109[[paste0("Month_", i)]] <- NULL
   }
 }
-for (i in 1:12) {
-  if (!is.null(monthly_plots_109[[paste0("Month_", i)]])) {
-    print(monthly_plots_109[[paste0("Month_", i)]])
-  }
-}
 
 
 # 檢查和設置 CRS
@@ -938,8 +926,6 @@ if (crs_boundary != crs_density_109) {
 
 
 
-st_crs(density_by_town_109) # 檢查 CRS
-st_crs(tainan_boundary) # 檢查 CRS
 
 # 如果 CRS 不一致，轉換 CRS
 density_by_town_109 <- st_transform(density_by_town_109, st_crs(tainan_boundary))
@@ -1005,15 +991,14 @@ for (i in 1:12) {
         plot.background = element_rect(fill = "black") 
       )
     
-    # Display the plot
-    print(plot)
-    # Save the plot
-    ggsave(filename = paste0("density_map_2020_month_", i, ".png"), plot = plot, dpi = 300)
+
+   
   } else {
     # Handle months with no data
     cat("No data for Month", i, "\n")
   }
 }
+knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/merge 2020.png")
 
 #2021(110)
 # Split the data by the 'month' column into a list
@@ -1074,16 +1059,8 @@ for (i in 1:12) {
     monthly_plots_110[[paste0("Month_", i)]] <- NULL
   }
 }
-for (i in 1:12) {
-  if (!is.null(monthly_plots_110[[paste0("Month_", i)]])) {
-    print(monthly_plots_110[[paste0("Month_", i)]])
-  }
-}
 
 
-
-# 讀取行政區 shapefile
-tainan_boundary <- st_read("C:/Users/jonat/OneDrive/Desktop/tainan_town/tainan_town")
 
 # 檢查和設置 CRS
 crs_boundary <- st_crs(tainan_boundary)
@@ -1110,23 +1087,12 @@ if (crs_boundary != crs_density_110) {
 }
 
 
-
-st_crs(density_by_town_110) # 檢查 CRS
-st_crs(tainan_boundary) # 檢查 CRS
-
 # 如果 CRS 不一致，轉換 CRS
 density_by_town_110 <- st_transform(density_by_town_110, st_crs(tainan_boundary))
-
-
-
-
 
 # Prepare a list to store monthly data
 monthly_density_data <- list()
 monthly_plots_110 <- list()
-
-
-
 
 for (i in 1:12) {
   # Filter data for the current month
@@ -1178,15 +1144,14 @@ for (i in 1:12) {
         plot.background = element_rect(fill = "black") 
       )
     
-    # Display the plot
-    print(plot)
-    # Save the plot
-    ggsave(filename = paste0("density_map_2021_month_", i, ".png"), plot = plot, dpi = 300)
+    
   } else {
     # Handle months with no data
     cat("No data for Month", i, "\n")
   }
 }
+
+knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/merge 2021.png")
 
 #2022(111)
 # Split the data by the 'month' column into a list
@@ -1247,19 +1212,13 @@ for (i in 1:12) {
     monthly_plots_111[[paste0("Month_", i)]] <- NULL
   }
 }
-for (i in 1:12) {
-  if (!is.null(monthly_plots_111[[paste0("Month_", i)]])) {
-    print(monthly_plots_111[[paste0("Month_", i)]])
-  }
-}
 
 
 
 
 
 
-# 讀取行政區 shapefile
-tainan_boundary <- st_read("C:/Users/jonat/OneDrive/Desktop/tainan_town/tainan_town")
+
 
 # 檢查和設置 CRS
 crs_boundary <- st_crs(tainan_boundary)
@@ -1285,10 +1244,6 @@ if (crs_boundary != crs_density_111) {
   density_by_town_111 <- st_transform(density_by_town_111, crs_boundary)
 }
 
-
-
-st_crs(density_by_town_111) # 檢查 CRS
-st_crs(tainan_boundary) # 檢查 CRS
 
 # 如果 CRS 不一致，轉換 CRS
 density_by_town_111 <- st_transform(density_by_town_111, st_crs(tainan_boundary))
@@ -1354,15 +1309,14 @@ for (i in 1:12) {
         plot.background = element_rect(fill = "black") 
       )
     
-    # Display the plot
-    print(plot)
-    # Save the plot
-    ggsave(filename = paste0("density_map_2022_month_", i, ".png"), plot = plot, dpi = 300)
+    
   } else {
     # Handle months with no data
     cat("No data for Month", i, "\n")
   }
 }
+
+knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/Merge 2022.png")
 
 #2023(112)
 # Split the data by the 'month' column into a list
@@ -1423,16 +1377,8 @@ for (i in 1:12) {
     monthly_plots_112[[paste0("Month_", i)]] <- NULL
   }
 }
-for (i in 1:12) {
-  if (!is.null(monthly_plots_112[[paste0("Month_", i)]])) {
-    print(monthly_plots_112[[paste0("Month_", i)]])
-  }
-}
 
 
-
-# 讀取行政區 shapefile
-tainan_boundary <- st_read("C:/Users/jonat/OneDrive/Desktop/tainan_town/tainan_town")
 
 # 檢查和設置 CRS
 crs_boundary <- st_crs(tainan_boundary)
@@ -1460,8 +1406,6 @@ if (crs_boundary != crs_density_112) {
 
 
 
-st_crs(density_by_town_112) # 檢查 CRS
-st_crs(tainan_boundary) # 檢查 CRS
 
 # 如果 CRS 不一致，轉換 CRS
 density_by_town_112 <- st_transform(density_by_town_112, st_crs(tainan_boundary))
@@ -1526,16 +1470,15 @@ for (i in 1:12) {
         panel.background = element_rect(fill = "black"),  # Ensure the background is black
         plot.background = element_rect(fill = "black") 
       )
-    
-    # Display the plot
-    print(plot)
-    # Save the plot
-    ggsave(filename = paste0("density_map_2023_month_", i, ".png"), plot = plot, dpi = 300)
+  
+   
   } else {
     # Handle months with no data
     cat("No data for Month", i, "\n")
   }
 }
+knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/merge 2023.png")
+
 
 #2024(113)
 # Split the data by the 'month' column into a list
@@ -1596,21 +1539,9 @@ for (i in 1:12) {
     monthly_plots_113[[paste0("Month_", i)]] <- NULL
   }
 }
-for (i in 1:12) {
-  if (!is.null(monthly_plots_113[[paste0("Month_", i)]])) {
-    print(monthly_plots_113[[paste0("Month_", i)]])
-  }
-}
 
 
 
-
-
-
-
-
-# 讀取行政區 shapefile
-tainan_boundary <- st_read("C:/Users/jonat/OneDrive/Desktop/tainan_town/tainan_town")
 
 # 檢查和設置 CRS
 crs_boundary <- st_crs(tainan_boundary)
@@ -1638,8 +1569,6 @@ if (crs_boundary != crs_density_113) {
 
 
 
-st_crs(density_by_town_113) # 檢查 CRS
-st_crs(tainan_boundary) # 檢查 CRS
 
 # 如果 CRS 不一致，轉換 CRS
 density_by_town_113 <- st_transform(density_by_town_113, st_crs(tainan_boundary))
@@ -1705,25 +1634,21 @@ for (i in 1:12) {
         plot.background = element_rect(fill = "black") 
       )
     
-    # Display the plot
-    print(plot)
-    # Save the plot
-    ggsave(filename = paste0("density_map_2024_month_", i, ".png"), plot = plot, dpi = 300)
+
+    
   } else {
     # Handle months with no data
     cat("No data for Month", i, "\n")
   }
 }
 
-knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/For Final/Yearly Plot.png")
-knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/For Final/comparison of positive cases and container indices over time.png")
-knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/For Final/Seasonal BI.png")
-
-knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/For Final/Seasonal CI.png")
-knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/For Final/Seasonal Positive case.png")
-knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/For Final/Trend of Positive Cases.png")
-
+knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/merge 2024.png")
 
 
 ```
+
+
+
+
+
 
