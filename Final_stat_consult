@@ -7,33 +7,28 @@ output:
     latex_engine: xelatex
 
 ---
-
+![Merged Data for 2018]("merged_2018.png")
 # Trends, Interventions, and Correlations in Disease Dynamics Over Time
 
 
 ### These plots below were provided by Excel tools, therefore no QMD code provided
 ## Temporal Pattern Analysis
-```{r}
-knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/For Final/Trend of Positive Cases.png")
-knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/For Final/Seasonal Positive case.png")
-```
+
+
+![Trend of Positive Cases]("Trend of Positive Cases.png")
+![Seasonal Positive case]("Seasonal Positive case.png")
 From the plot, it is clear that there is a seasonal pattern, with cases peaking around the same time each year. This suggests that external factors, such as weather, may influence the trends. For instance, mid-season increases in rainfall create stagnant water, which serves as breeding grounds for mosquitoes—key vectors for diseases like dengue or malaria. Warmer temperatures and high humidity during certain seasons may further accelerate mosquito reproduction and activity, increasing transmission rates.
 
 
 ## Seasonal Trends for the Breteau Index (BI) and Container Index (CI)
-```{r}
-knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/For Final/Seasonal BI.png")
-knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/For Final/Seasonal CI.png")
-```
+![Seasonal CI]("Seasonal BI.png")
+![Seasonal CI]("Seasonal CI.png")
 From the Breteau Index and Container Index, we can observe a clear seasonal pattern, with both indices showing an increasing trend in their seasonal components from early to mid-year. This suggests that conditions favorable for mosquito breeding, such as increased rainfall or rising temperatures, tend to occur more frequently during this period.
 
 The Breteau Index, which measures the number of positive mosquito habitats per surveyed area, and the Container Index, which indicates the percentage of water-holding containers with mosquito larvae, both reflect heightened mosquito activity and breeding during this time. These patterns align with the seasonal rise in positive cases, emphasizing the need for intensified vector control measures and surveillance efforts in the early months of the year to mitigate the impact of outbreaks.
 
 ## Yearly Container Index
-```{r}
-knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/For Final/Yearly Plot.png")
-
-```
+![Yearly Plot]("Yearly Plot.png")
 Interventions Seem Effective:
 The overall decline observed in the Breteau Index (BI) and Container Index (CI), coupled with a reduction in the number of positive cases, suggests that the implemented interventions are having a significant impact. Measures such as eliminating mosquito breeding sites, raising public awareness, and improving vector control strategies appear to be effective in disrupting the transmission cycle and reducing the disease burden over time.
 
@@ -42,11 +37,8 @@ It is assumed that the Container Index (CI) has a stronger correlation with posi
 
 
 ## Correlation Matrix
-```{r}
-knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/For Final/Correlation_matrix.png")
-knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/For Final/comparison of positive cases and container indices over time.png")
-
-```
+![Correlation_matrix]("Correlation_matrix.png")
+![Comparison of positive cases and container indices over time]("comparison of positive cases and container indices over time.png")
 Strategic Planning:
 Public health programs should prioritize reducing container infestation rates (CI) as a core focus of intervention efforts. CI provides a direct measure of the proportion of water-holding containers with mosquito larvae, making it a more actionable target compared to the Breteau Index (BI), which reflects broader mosquito habitat density in relation to surveyed households. By targeting the sources of infestation, such as eliminating or treating containers where larvae are detected, resources can be used more efficiently to disrupt mosquito breeding and reduce transmission risks.
 
@@ -349,7 +341,6 @@ for (i in 1:12) {
   }
 }
 
-knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/merged 2016.png")
 
 
 #2017(106)
@@ -511,7 +502,7 @@ for (i in 1:12) {
     cat("No data for Month", i, "\n")
   }
 }
-knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/merge 2017.png")
+
 
 #2018(107)
 # Split the data by the 'month' column into a list
@@ -676,7 +667,7 @@ for (i in 1:12) {
     cat("No data for Month", i, "\n")
   }
 }
-knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/merged 2018.png")
+
 
 
 #2019(108)
@@ -838,7 +829,7 @@ for (i in 1:12) {
   }
 }
 
-knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/merge 2019.png")
+
 
 #2020(109)
 # Split the data by the 'month' column into a list
@@ -998,7 +989,7 @@ for (i in 1:12) {
     cat("No data for Month", i, "\n")
   }
 }
-knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/merge 2020.png")
+
 
 #2021(110)
 # Split the data by the 'month' column into a list
@@ -1151,7 +1142,7 @@ for (i in 1:12) {
   }
 }
 
-knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/merge 2021.png")
+
 
 #2022(111)
 # Split the data by the 'month' column into a list
@@ -1316,7 +1307,7 @@ for (i in 1:12) {
   }
 }
 
-knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/Merge 2022.png")
+
 
 #2023(112)
 # Split the data by the 'month' column into a list
@@ -1477,7 +1468,7 @@ for (i in 1:12) {
     cat("No data for Month", i, "\n")
   }
 }
-knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/merge 2023.png")
+
 
 
 #2024(113)
@@ -1642,12 +1633,18 @@ for (i in 1:12) {
   }
 }
 
-knitr::include_graphics("C:/Users/jonat/OneDrive/Desktop/merge 2024.png")
-
 
 ```
 
-
+![Relative risk Additional for 2016]("merge 2016.png")
+![Relative risk Additional for 2017]("merge 2017.png")
+![Relative risk Additional for 2018]("merge 2018.png")
+![Relative risk Additional for 2019]("merge 2019.png")
+![Relative risk Additional for 2020]("merge 2020.png")
+![Relative risk Additional for 2021]("merge 2021.png")
+![Relative risk Additional for 2022]("merge 2022.png")
+![Relative risk Additional for 2023]("merge 2023.png")
+![Relative risk Additional for 2024]("merge 2024.png")
 
 
 
