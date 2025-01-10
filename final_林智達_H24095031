@@ -242,7 +242,7 @@ for (i in 1:12) {
 
 
 # 讀取行政區 shapefile
-tainan_boundary <- st_read("C:/Users/jonat/OneDrive/Desktop/tainan_town/tainan_town")
+tainan_boundary <- st_read("tainan_town/tainan_town")
 
 # 檢查和設置 CRS
 crs_boundary <- st_crs(tainan_boundary)
